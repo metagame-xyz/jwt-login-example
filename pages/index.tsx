@@ -1,6 +1,6 @@
-import segmentPlugin from '@analytics/segment';
 import { Box, Flex, Heading, HStack, Image, Link, Text, VStack } from '@chakra-ui/react';
 import { datadogRum } from '@datadog/browser-rum';
+import { ConnectButton } from '@rainbow-me/rainbowkit';
 import Analytics from 'analytics';
 import axios from 'axios';
 import { BigNumber, ethers } from 'ethers';
@@ -16,24 +16,10 @@ import { Etherscan, Opensea, TwelveCircles } from '@components/Icons';
 import MintButton, { MintStatus } from '@components/MintButton';
 
 import { ioredisClient } from '@utils';
-import {
-    blackholeAddress,
-    CONTRACT_ADDRESS,
-    METABOT_BASE_API_URL,
-    NETWORK,
-} from '@utils/constants';
+import { blackholeAddress, METABOT_BASE_API_URL, NETWORK } from '@utils/constants';
 import { SEGMENT_KEY } from '@utils/constants';
 import { copy } from '@utils/content';
 import useWindowDimensions from '@utils/frontend';
-
-export const analytics = Analytics({
-    app: 'awesome-app',
-    plugins: [
-        segmentPlugin({
-            writeKey: SEGMENT_KEY,
-        }),
-    ],
-});
 
 export const getServerSideProps = async () => {
     const metadata = await ioredisClient.hget('2', 'metadata');
@@ -65,7 +51,12 @@ const toastErrorData = (title: string, description: string) => ({
 });
 
 const Home = ({ metadata }) => {
-    const { address: uncleanAddress } = useAccount({ onDisconnect: datadogRum.removeUser });
+    const { address: uncleanAddress } = useAccount({
+        onConnect({ address, connector, isReconnected }) {
+            console.log('Connected', { address, connector, isReconnected });
+        },
+        onDisconnect: datadogRum.removeUser,
+    });
     const { chain } = useNetwork();
     const address = uncleanAddress ? AddressZ.parse(uncleanAddress) : uncleanAddress;
 
@@ -76,8 +67,8 @@ const Home = ({ metadata }) => {
     const [mintStatus, setMintStatus] = useState<MintStatus>(MintStatus.unknown);
 
     return (
-        <Box align="center" backgroundImage={`url("/static/assets/gridBackground.svg") !important`}>
-            <CustomConnectButton />
+        <Box align="center" justifyContent={'center'} minH="100vh">
+            <ConnectButton />
         </Box>
     );
 };
