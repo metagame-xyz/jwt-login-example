@@ -20,12 +20,10 @@ import {
 } from '@utils/constants';
 
 const registerUser = async (address) => {
-    console.log('register');
     const body = {
         address,
         // sources: ['Jwt_example'],
     };
-    console.log('signing up...', body, signupOptions(body));
     return axios
         .post(`${METABOT_BASE_API_URL}user/signup`, body, {
             headers: {
@@ -42,31 +40,26 @@ const registerUser = async (address) => {
         });
 };
 
-const checkIfUserExists = async (address) => {
-    const { data } = await axios.get(`${METABOT_BASE_API_URL}user/${address}`);
-    if (address.toLowerCase() === data?.address.toLowerCase()) {
-        return address;
-    }
-    return await registerUser(address);
-};
-
 const Home = ({ metadata }) => {
     const { query } = useRouter();
 
-    const [loggedIn, setLoggedIn] = useState(false);
+    const [loggedIn, setLoggedIn] = useState(!!localStorage.getItem('jwt_token'));
     const [githubAuthed, setGithubAuthed] = useState(false);
 
     const [error, setError] = useState('');
-    const [token, setToken] = useState();
-    const [nonce, setNonce] = useState();
     const { address: uncleanAddress } = useAccount({
         onConnect({ address, connector, isReconnected }) {
             checkIfUserExists(address)
                 .then(() => {
-                    getNonce(address);
+                    if (!loggedIn) {
+                        getNonce(address);
+                    }
                 })
                 .then((resp) => {})
-                .catch((err) => console.log(err.toString()));
+                .catch((err) => {
+                    setLoggedIn(false);
+                    console.log(err.toString());
+                });
         },
         onDisconnect: datadogRum.removeUser,
     });
@@ -81,7 +74,6 @@ const Home = ({ metadata }) => {
             // Verify signature when sign message succeeds
 
             const address = verifyMessage(variables.message, signature);
-            console.log('verified', variables, signature);
 
             axios
                 .post(
@@ -99,17 +91,25 @@ const Home = ({ metadata }) => {
                 .then((resp) => {
                     console.log('JWT', resp.data.token);
                     setLoggedIn(true);
-                    setToken(resp.data.token);
+                    localStorage.setItem('jwt_token', resp.data.token);
                 });
         },
     });
+
+    const checkIfUserExists = async (address) => {
+        const { data } = await axios.get(`${METABOT_BASE_API_URL}user/${address}`);
+        if (address.toLowerCase() === data?.address.toLowerCase()) {
+            return address;
+        }
+        setLoggedIn(false);
+        return await registerUser(address);
+    };
 
     const getNonce = async (address) => {
         const { data: respNonce } = await axios.get(`${METABOT_BASE_API_URL}user/nonce/${address}`);
         if (!respNonce) {
             setError('Could not get nonce');
         }
-        setNonce(respNonce);
         await signMessage({ message: `Nonce: ${respNonce}` });
     };
     const address = uncleanAddress ? AddressZ.parse(uncleanAddress) : uncleanAddress;
@@ -122,31 +122,28 @@ const Home = ({ metadata }) => {
 
     useEffect(() => {
         const code = query.code;
-        console.log('CODE', code, githubAuthed);
-        if (code && !githubAuthed && token) {
+        if (code && !githubAuthed && loggedIn) {
             axios
                 .post(
                     `${METABOT_BASE_API_URL}github/setCredentials`,
                     {
-                        address,
                         code,
                     },
                     {
                         headers: {
                             'Content-Type': 'application/x-www-form-urlencoded',
-                            Authorization: token,
+                            Authorization: localStorage.getItem('jwt_token'),
                         },
                     },
                 )
                 .then(({ data }) => {
-                    console.log('AUTHED', data);
                     setGithubAuthed(true);
                 })
                 .catch((err) => {
                     console.log('endpt err', err);
                 });
         }
-    }, [query, token]);
+    }, [query]);
 
     return (
         <Box align="center" justifyContent={'center'} minH="100vh">
@@ -161,11 +158,6 @@ const Home = ({ metadata }) => {
                         )
                     }>
                     Connect Github
-                </Button>
-            ) : null}
-            {address && !token ? (
-                <Button onClick={() => signMessage({ message: `Nonce: ${nonce}` })}>
-                    Sign message
                 </Button>
             ) : null}
         </Box>
