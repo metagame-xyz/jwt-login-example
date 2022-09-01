@@ -25,11 +25,7 @@ const registerUser = async (address) => {
         // sources: ['Jwt_example'],
     };
     return axios
-        .post(`${METABOT_BASE_API_URL}user/signup`, body, {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-            },
-        })
+        .post(`${METABOT_BASE_API_URL}user/signup`, body, signupOptions(body))
         .then((resp) => {
             console.log('SIGNED UP');
             return address;
@@ -44,7 +40,7 @@ const Home = ({ metadata }) => {
     const { query } = useRouter();
 
     const [loggedIn, setLoggedIn] = useState(!!localStorage.getItem('jwt_token'));
-    const [githubAuthed, setGithubAuthed] = useState(false);
+    const [githubAuth, setGithubAuth] = useState();
 
     const [error, setError] = useState('');
     const { address: uncleanAddress } = useAccount({
@@ -123,7 +119,7 @@ const Home = ({ metadata }) => {
     useEffect(() => {
         const code = query.code;
         console.log(localStorage.getItem('jwt_token'));
-        if (code && !githubAuthed && loggedIn) {
+        if (code && !githubAuth && loggedIn) {
             axios
                 .post(
                     `${METABOT_BASE_API_URL}github/setCredentials`,
@@ -138,8 +134,8 @@ const Home = ({ metadata }) => {
                         },
                     },
                 )
-                .then(() => {
-                    setGithubAuthed(true);
+                .then(({ data }) => {
+                    setGithubAuth(data);
                 })
                 .catch((err) => {
                     console.log('endpt err', err);
@@ -151,7 +147,7 @@ const Home = ({ metadata }) => {
         <Box align="center" justifyContent={'center'} minH="100vh">
             <ConnectButton />
             <Text textColor={'white'}>{loggedIn ? `LOGGED IN: ${address}` : `NOT LOGGED IN`}</Text>
-            {loggedIn ? (
+            {loggedIn && !githubAuth ? (
                 <Button
                     onClick={() =>
                         window.open(
@@ -162,6 +158,7 @@ const Home = ({ metadata }) => {
                     Connect Github
                 </Button>
             ) : null}
+            {githubAuth ? <Text textColor={'white'}>Welcome {githubAuth.login}</Text> : null}{' '}
         </Box>
     );
 };
