@@ -122,21 +122,23 @@ const Home = ({ metadata }) => {
 
     useEffect(() => {
         const code = query.code;
+        console.log(localStorage.getItem('jwt_token'));
         if (code && !githubAuthed && loggedIn) {
             axios
                 .post(
                     `${METABOT_BASE_API_URL}github/setCredentials`,
                     {
                         code,
+                        address,
                     },
                     {
                         headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded',
                             Authorization: localStorage.getItem('jwt_token'),
+                            'Content-Type': 'application/x-www-form-urlencoded',
                         },
                     },
                 )
-                .then(({ data }) => {
+                .then(() => {
                     setGithubAuthed(true);
                 })
                 .catch((err) => {
