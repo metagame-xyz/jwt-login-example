@@ -64,19 +64,14 @@ export const checkSignature = (message: string, joinedSignature: string, walletA
     return walletAddress === recoveredAddress;
 };
 
-export const signMessage = (body) => {
+export const signMessage = (address) => {
     const hmac = createHmac('sha256', SIGNUP_AUTH_TOKEN); // Create a HMAC SHA256 hash using the auth token
-    hmac.update(JSON.stringify(body), 'utf8'); // Update the token hash with the request body using utf8
+    hmac.update(JSON.stringify(address), 'utf8'); // Update the token hash with the request body using utf8
     const digest = hmac.digest('hex');
     return digest;
 };
 
-export const signupOptions = (body) => ({
-    headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-Signup-Signature': signMessage(body),
-    },
-});
+export const signupSignature = (address) => signMessage(address);
 
 export const tsToMonthAndYear = (ts: number): string => {
     const date = ts ? new Date(ts * 1000) : new Date();
