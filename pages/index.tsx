@@ -58,8 +58,11 @@ const Home = withAuthentication(
                 <Text textColor={'white'}>
                     {user ? `LOGGED IN: ${user.address}` : `NOT LOGGED IN`}
                 </Text>
-                {user && !user.githubUsername ? (
+                {user && !user.githubUsername && !query?.code ? (
                     <Button onClick={connectGithub}>Connect Github</Button>
+                ) : null}
+                {user && !loading && !hasJwt && query?.code ? (
+                    <Text textColor="white">Sign the message!</Text>
                 ) : null}
                 {user?.githubUsername ? (
                     <Text textColor={'white'}>Welcome {user.githubUsername}</Text>
