@@ -1,4 +1,15 @@
-import { Box, Button, Flex, Heading, HStack, Image, Link, Text, VStack } from '@chakra-ui/react';
+import {
+    Box,
+    Button,
+    Flex,
+    Heading,
+    HStack,
+    Image,
+    Input,
+    Link,
+    Text,
+    VStack,
+} from '@chakra-ui/react';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import axios from 'axios';
 import { useRouter } from 'next/router';
@@ -11,7 +22,7 @@ const Home = withAuthentication(
     ({ hasJwt, user, setUser = (a) => a, loading, signMessage = (a) => a }) => {
         const { query } = useRouter();
         const [error, setError] = useState('');
-
+        const [repoName, setRepoName] = useState('');
         const connectGithub = async () => {
             window.open(
                 `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}`,
@@ -45,6 +56,17 @@ const Home = withAuthentication(
             }
         };
 
+        const getCommitCount = () => {
+            axios
+                .get(`${METABOT_BASE_API_URL}github/getCommitCount?repo=${repoName}`, {
+                    headers: {
+                        Authorization: localStorage.getItem('jwt_token'),
+                    },
+                })
+                .then((data) => {
+                    console.log('COMMIT COUNT RESP', data);
+                });
+        };
         useEffect(() => {
             if (user && !loading && !hasJwt && query?.code) {
                 signMessage({ message: `Nonce: ${user.nonce}` });
@@ -65,7 +87,21 @@ const Home = withAuthentication(
                     <Text textColor="white">Sign the message!</Text>
                 ) : null}
                 {user?.githubUsername ? (
-                    <Text textColor={'white'}>Welcome {user.githubUsername}</Text>
+                    <>
+                        <Text textColor={'white'}>Welcome {user.githubUsername}</Text>
+                        <HStack maxW="50%">
+                            <Text textColor="white">Repository name</Text>
+                            <Input
+                                value={repoName}
+                                onChange={(e) => setRepoName(e.target.value)}
+                                placeholder="Repository name"
+                                size="sm"
+                                textColor={'white'}
+                            />
+                        </HStack>
+
+                        <Button onClick={getCommitCount}>Get commit count</Button>
+                    </>
                 ) : null}{' '}
                 <Text textColor="red">{error}</Text>
             </Box>
