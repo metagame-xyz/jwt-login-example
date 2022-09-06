@@ -11,13 +11,7 @@ import { METABOT_BASE_API_URL } from './constants';
 
 const withAuthentication = (Component) =>
     function ComponentWithAuth(props) {
-        const { address: uncleanAddress } = useAccount({
-            onDisconnect: () => {
-                localStorage.removeItem('jwt_token');
-                setJwt(false);
-                setUser(null);
-            },
-        });
+        const { address: uncleanAddress } = useAccount({});
         const [address, setAddress] = useState(uncleanAddress);
         const [hasJwt, setJwt] = useState(false);
         const [user, setUser] = useState(null);
@@ -52,7 +46,6 @@ const withAuthentication = (Component) =>
                         localStorage.setItem('jwt_token', resp.data.token);
                         setJwt(true);
                         setLoading(false);
-                        console.log('SIGNED');
                     })
                     .catch((err) => setError(err.toString()));
             },
@@ -67,12 +60,12 @@ const withAuthentication = (Component) =>
         }, [uncleanAddress]);
 
         useEffect(() => {
-            if (address) {
+            if (address && !loading) {
                 setLoading(true);
                 axios
                     .get(`${METABOT_BASE_API_URL}user/${address}`, {
                         headers: {
-                            Authorization: `Bearer ${localStorage.getItem('jwt_token') || ''}`,
+                            Authorization: localStorage.getItem('jwt_token') || '',
                             'X-Signup-Signature': signupSignature(address),
                         },
                     })
@@ -80,6 +73,10 @@ const withAuthentication = (Component) =>
                         const { isTokenGood, user: respUser } = data;
                         setUser(respUser);
                         setJwt(isTokenGood);
+                        if (!isTokenGood) {
+                            localStorage.removeItem('jwt_token');
+                            signMessage({ message: `Nonce: ${respUser.nonce}` });
+                        }
                         setLoading(false);
                     })
                     .catch((err) => {

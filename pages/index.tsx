@@ -23,6 +23,7 @@ const Home = withAuthentication(
         const { query } = useRouter();
         const [error, setError] = useState('');
         const [repoName, setRepoName] = useState('');
+        const [commitCount, setCommitCount] = useState();
         const connectGithub = async () => {
             window.open(
                 `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}`,
@@ -63,44 +64,45 @@ const Home = withAuthentication(
                         Authorization: localStorage.getItem('jwt_token'),
                     },
                 })
-                .then((data) => {
-                    console.log('COMMIT COUNT RESP', data);
-                });
+                .then(({ data }) => setCommitCount(data));
         };
         useEffect(() => {
-            if (user && !loading && !hasJwt && query?.code) {
-                signMessage({ message: `Nonce: ${user.nonce}` });
-            }
             getGithubAuth();
         }, [query, loading]);
-
         return (
             <Box align="center" justifyContent={'center'} minH="100vh">
                 <ConnectButton />
                 <Text textColor={'white'}>
-                    {user ? `LOGGED IN: ${user.address}` : `NOT LOGGED IN`}
+                    {user && hasJwt ? `LOGGED IN: ${user.address}` : `NOT LOGGED IN`}
                 </Text>
-                {user && !user.githubUsername && !query?.code ? (
+                {user && !user.githubUsername && hasJwt && !query?.code ? (
                     <Button onClick={connectGithub}>Connect Github</Button>
                 ) : null}
-                {user && !loading && !hasJwt && query?.code ? (
-                    <Text textColor="white">Sign the message!</Text>
-                ) : null}
-                {user?.githubUsername ? (
+                {user?.githubUsername && hasJwt ? (
                     <>
                         <Text textColor={'white'}>Welcome {user.githubUsername}</Text>
                         <HStack maxW="50%">
                             <Text textColor="white">Repository name</Text>
                             <Input
                                 value={repoName}
-                                onChange={(e) => setRepoName(e.target.value)}
+                                onChange={(e) => {
+                                    setRepoName(e.target.value);
+                                    setCommitCount(undefined);
+                                }}
                                 placeholder="Repository name"
                                 size="sm"
                                 textColor={'white'}
                             />
                         </HStack>
 
-                        <Button onClick={getCommitCount}>Get commit count</Button>
+                        <Button disabled={!repoName} onClick={getCommitCount}>
+                            Get commit count
+                        </Button>
+                        {commitCount || commitCount === 0 ? (
+                            <Text>
+                                {commitCount} commits to {repoName}
+                            </Text>
+                        ) : null}
                     </>
                 ) : null}{' '}
                 <Text textColor="red">{error}</Text>
