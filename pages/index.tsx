@@ -26,7 +26,7 @@ const Home = withAuthentication(
         const [commitCount, setCommitCount] = useState();
         const connectGithub = async () => {
             window.open(
-                `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}`,
+                `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=repo:status`,
                 '_self',
             );
         };
