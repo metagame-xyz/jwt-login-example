@@ -1,11 +1,12 @@
-import NextAuth from 'next-auth'
-import CredentialsProvider from 'next-auth/providers/credentials'
-import { getCsrfToken } from 'next-auth/react'
+import axios from 'axios';
+import NextAuth from 'next-auth';
+import CredentialsProvider from 'next-auth/providers/credentials';
+import { getCsrfToken } from 'next-auth/react';
+import { SiweMessage } from 'siwe';
 
-import { SiweMessage } from 'siwe'
+import { METABOT_BASE_API_URL } from '@utils/constants';
+import { frontendSignature, signupSignature } from '@utils/index';
 
-// For more information on each option (and a full list of options) go to
-// https://next-auth.js.org/configuration/options
 export default async function auth(req, res) {
     const providers = [
         CredentialsProvider({
@@ -24,44 +25,43 @@ export default async function auth(req, res) {
             },
             async authorize(credentials) {
                 try {
-                    const siwe = new SiweMessage(JSON.parse(credentials?.message || '{}'))
+                    const siwe = new SiweMessage(JSON.parse(credentials?.message || '{}'));
 
                     const nextAuthUrl =
                         process.env.NEXTAUTH_URL ||
-                        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null)
+                        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null);
+
                     if (!nextAuthUrl) {
-                        return null
+                        return null;
                     }
 
-                    const nextAuthHost = new URL(nextAuthUrl).host
+                    const nextAuthHost = new URL(nextAuthUrl).host;
                     if (siwe.domain !== nextAuthHost) {
-                        return null
+                        return null;
                     }
 
                     if (siwe.nonce !== (await getCsrfToken({ req }))) {
-                        return null
+                        return null;
                     }
 
-                    await siwe.validate(credentials?.signature || '')
+                    await siwe.validate(credentials?.signature || '');
                     return {
                         id: siwe.address,
-                    }
+                    };
                 } catch (e) {
-                    return null
+                    return null;
                 }
             },
         }),
-    ]
+    ];
 
-    const isDefaultSigninPage = req.method === 'GET' && req.query.nextauth.includes('signin')
+    const isDefaultSigninPage = req.method === 'GET' && req.query.nextauth.includes('signin');
 
-    // Hide Sign-In with Ethereum from default sign page
     if (isDefaultSigninPage) {
-        providers.pop()
+        providers.pop();
     }
 
     return await NextAuth(req, res, {
-        // https://next-auth.js.org/configuration/providers/oauth
         providers,
         session: {
             strategy: 'jwt',
@@ -69,12 +69,26 @@ export default async function auth(req, res) {
         secret: process.env.NEXTAUTH_SECRET,
         callbacks: {
             async session({ session, token }) {
-                // TODO get good stuff
-                session.address = token.sub
-                session.user.name = token.sub
-                session.user.image = 'https://www.fillmurray.com/128/128'
-                return session
+                const address = token.sub;
+                session.address = token.sub;
+
+                try {
+                    const { data: user } = await axios.get(
+                        `${METABOT_BASE_API_URL}user/${address}`,
+                        {
+                            headers: {
+                                'x-signup-signature': signupSignature(address),
+                                'x-frontend-signature': frontendSignature(address),
+                            },
+                        },
+                    );
+                    session.user = user;
+                } catch (err) {
+                    res.status(500).json(err);
+                } finally {
+                    return session;
+                }
             },
         },
-    })
+    });
 }

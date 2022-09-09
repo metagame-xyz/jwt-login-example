@@ -25,7 +25,7 @@ export const METABOT_BASE_API_URL = process.env.NEXT_PUBLIC_METABOT_BASE_API_URL
 export const SLACK_API_TOKEN = process.env.SLACK_API_TOKEN;
 
 export const SIGNUP_AUTH_TOKEN = process.env.NEXT_PUBLIC_SIGNUP_AUTH_TOKEN;
-
+export const FRONTEND_AUTH_TOKEN = process.env.NEXT_PUBLIC_FRONTEND_AUTH_TOKEN;
 /* Frontend Constants */
 export const NETWORK = process.env.NEXT_PUBLIC_NETWORK.toLowerCase();
 export const INFURA_PROJECT_ID = process.env.NEXT_PUBLIC_INFURA_PROJECT_ID;
