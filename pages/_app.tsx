@@ -1,7 +1,9 @@
 import { ChakraProvider, extendTheme, Flex } from '@chakra-ui/react';
 import '@fontsource/arimo';
 import { lightTheme, RainbowKitProvider } from '@rainbow-me/rainbowkit';
+import { RainbowKitSiweNextAuthProvider } from '@rainbow-me/rainbowkit-siwe-next-auth';
 import '@rainbow-me/rainbowkit/styles.css';
+import { SessionProvider } from 'next-auth/react';
 import type { AppProps } from 'next/app';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/router';
@@ -30,35 +32,39 @@ function App({ Component, pageProps }: AppProps): JSX.Element {
         return (
             <ChakraProvider theme={theme}>
                 <WagmiConfig client={wagmiClient}>
-                    <RainbowKitProvider
-                        chains={chains}
-                        theme={lightTheme({
-                            accentColor: '#FDFFFF',
-                            accentColorForeground: '#151515',
-                        })}>
-                        <Flex
-                            // backgroundImage={leftBg.src}
-                            // bgBlendMode="overlay"
-                            // bgPosition={'left 0px top -70px'}
-                            // bgSize={bgSize}
-                            width="100%"
-                            // bgRepeat="no-repeat repeat"
-                        >
-                            <Flex
-                                // backgroundImage={rightBg.src}
-                                width="100%"
-                                // bgPosition={'right 0px top -70px'}
-                                // bgSize={bgSize}
-                                // bgRepeat="no-repeat repeat"
-                            >
-                                <Flex bgColor="brand.800" width="100%">
-                                    <Layout>
-                                        <Component {...pageProps} />
-                                    </Layout>
+                    <SessionProvider session={pageProps.session} refetchInterval={0}>
+                        <RainbowKitSiweNextAuthProvider>
+                            <RainbowKitProvider
+                                chains={chains}
+                                theme={lightTheme({
+                                    accentColor: '#FDFFFF',
+                                    accentColorForeground: '#151515',
+                                })}>
+                                <Flex
+                                    // backgroundImage={leftBg.src}
+                                    // bgBlendMode="overlay"
+                                    // bgPosition={'left 0px top -70px'}
+                                    // bgSize={bgSize}
+                                    width="100%"
+                                    // bgRepeat="no-repeat repeat"
+                                >
+                                    <Flex
+                                        // backgroundImage={rightBg.src}
+                                        width="100%"
+                                        // bgPosition={'right 0px top -70px'}
+                                        // bgSize={bgSize}
+                                        // bgRepeat="no-repeat repeat"
+                                    >
+                                        <Flex bgColor="brand.800" width="100%">
+                                            <Layout>
+                                                <Component {...pageProps} />
+                                            </Layout>
+                                        </Flex>
+                                    </Flex>
                                 </Flex>
-                            </Flex>
-                        </Flex>
-                    </RainbowKitProvider>
+                            </RainbowKitProvider>
+                        </RainbowKitSiweNextAuthProvider>
+                    </SessionProvider>
                 </WagmiConfig>
             </ChakraProvider>
         );
