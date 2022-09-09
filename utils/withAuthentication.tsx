@@ -75,7 +75,7 @@ const withAuthentication = (Component) =>
                         setJwt(isTokenGood);
                         if (!isTokenGood) {
                             localStorage.removeItem('jwt_token');
-                            signMessage({ message: `Nonce: ${respUser.nonce}` });
+                            // signMessage({ message: `Nonce: ${respUser.nonce}` });
                         }
                         setLoading(false);
                     })
